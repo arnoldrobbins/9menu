@@ -26,7 +26,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "@(#) 9menu version 1.2";
+char version[] = "@(#) 9menu version 1.3";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -153,7 +153,7 @@ char **argv;
 		usage();
 
 	labels = &argv[i];
-	commands = (char **) calloc(numitems, sizeof(char *));
+	commands = (char **) malloc(numitems * sizeof(char *));
 	if (commands == NULL) {
 		fprintf(stderr, "%s: no memory!\n", progname);
 		exit(1);
@@ -171,7 +171,7 @@ char **argv;
 	if (dpy == NULL) {
 		fprintf(stderr, "%s: cannot open display", progname);
 		if (displayname != NULL)
-			printf(" %s", displayname);
+			fprintf(stderr, " %s", displayname);
 		fprintf(stderr, "\n");
 		exit(1);
 	}
@@ -251,9 +251,11 @@ char *com;
 /* reap --- collect dead children */
 
 void
-reap()
+reap(s)
+int s;
 {
 	(void) wait((int *) NULL);
+	signal(s, reap);
 }
 
 /* usage --- print a usage message and die */
@@ -263,7 +265,7 @@ usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
 	fprintf(stderr, "[-label name] [-popup] [-popdown] [-iconic] ");
-	fprintf(stderr, "[-geometry geom] [-version] [-shell shell ] ");
+	fprintf(stderr, "[-geometry geom] [-version] [-shell shell] ");
 	fprintf(stderr, "menitem:command ...\n");
 	exit(1);
 }
