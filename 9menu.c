@@ -13,6 +13,15 @@
  * Arnold Robbins
  * arnold@skeeve.atl.ga.us
  * October, 1994
+ *
+ * Code added to cause pop-up (unIconify) to move menu to mouse.
+ * Christopher Platt
+ * platt@coos.dartmouth.edu
+ * May, 1995
+ *
+ * Said code moved to -teleport option, and -warp option added.
+ * Arnold Robbins
+ * June, 1995
  */
 
 #include <stdio.h>
@@ -26,7 +35,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "@(#) 9menu version 1.3";
+char version[] = "@(#) 9menu version 1.4";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -41,6 +50,8 @@ Atom wm_delete_window;
 int g_argc;			/* for XSetWMProperties to use */
 char **g_argv;
 char *geometry = "";
+int savex, savey;
+Window savewindow;
 
 char *fontlist[] = {	/* default font list if no -font */
 	"pelm.latin1.9",
@@ -82,6 +93,8 @@ char *labelname;	/* window and icon name */
 int popup;		/* true if we're a popup window */
 int popdown;		/* autohide after running a command */
 int iconic;		/* start iconified */
+int teleport;		/* teleport the menu */
+int warp;		/* warp the mouse */
 
 char **labels;		/* list of labels and commands */
 char **commands;
@@ -91,6 +104,7 @@ char *shell = "/bin/sh";	/* default shell */
 
 extern void usage(), run_menu(), spawn(), ask_wm_for_delete();
 extern void reap(), set_wm_hints();
+extern void redraw(), teleportmenu(), warpmouse(), restoremouse();
 
 /* main --- crack arguments, set up X stuff, run the main menu loop */
 
@@ -108,7 +122,7 @@ char **argv;
 	g_argv = argv;
 
 	/* set default label name */
-	if ((cp = strchr(argv[0], '/')) == NULL)
+	if ((cp = strrchr(argv[0], '/')) == NULL)
 		labelname = argv[0];
 	else
 		labelname = ++cp;
@@ -117,20 +131,20 @@ char **argv;
 	progname = labelname;
 
 	for (i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-label") == 0) {
-			labelname = argv[i+1];
+		if (strcmp(argv[i], "-display") == 0) {
+			displayname = argv[i+1];
 			i++;
 		} else if (strcmp(argv[i], "-font") == 0) {
 			fontname = argv[i+1];
 			i++;
-		} else if (strcmp(argv[i], "-shell") == 0) {
-			shell = argv[i+1];
-			i++;
-		} else if (strcmp(argv[i], "-display") == 0) {
-			displayname = argv[i+1];
-			i++;
 		} else if (strcmp(argv[i], "-geometry") == 0) {
 			geometry = argv[i+1];
+			i++;
+		} else if (strcmp(argv[i], "-label") == 0) {
+			labelname = argv[i+1];
+			i++;
+		} else if (strcmp(argv[i], "-shell") == 0) {
+			shell = argv[i+1];
 			i++;
 		} else if (strcmp(argv[i], "-popup") == 0)
 			popup++;
@@ -138,6 +152,10 @@ char **argv;
 			popdown++;
 		else if (strcmp(argv[i], "-iconic") == 0)
 			iconic++;
+		else if (strcmp(argv[i], "-teleport") == 0)
+			teleport++;
+		else if (strcmp(argv[i], "-warp") == 0)
+			warp++;
 		else if (strcmp(argv[i], "-version") == 0) {
 			printf("%s\n", version);
 			exit(0);
@@ -224,7 +242,7 @@ void
 spawn(com)
 char *com;
 {
-	int pid, fd;
+	int pid;
 	static char *sh_base = NULL;
 
 	if (sh_base == NULL) {
@@ -264,10 +282,10 @@ void
 usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
-	fprintf(stderr, "[-label name] [-popup] [-popdown] [-iconic] ");
-	fprintf(stderr, "[-geometry geom] [-version] [-shell shell] ");
-	fprintf(stderr, "menitem:command ...\n");
-	exit(1);
+	fprintf(stderr, "[-geometry geom] [-shell shell]  [-label name] ");
+	fprintf(stderr, "[-popup] [-popdown] [-iconic]  [-teleport] ");
+	fprintf(stderr, "[-warp]  [-version] menitem:command ...\n");
+	exit(0);
 }
 
 /* run_menu --- put up the window, execute selected commands */
@@ -277,9 +295,7 @@ run_menu()
 {
 	XEvent ev;
 	XClientMessageEvent *cmsg;
-	int i, cur, old, wide, high, status, drawn;
-	int x, y, dx, dy;
-	int tx, ty;
+	int i, cur, old, wide, high, ico, dx, dy;
 
 	dx = 0;
 	for (i = 0; i < numitems; i++) {
@@ -299,13 +315,15 @@ run_menu()
 	ask_wm_for_delete();
 
 #define	MenuMask (ButtonPressMask|ButtonReleaseMask\
-	|LeaveWindowMask|PointerMotionMask|ButtonMotionMask|ExposureMask)
+	|LeaveWindowMask|PointerMotionMask|ButtonMotionMask\
+	|ExposureMask|StructureNotifyMask)
 
 	XSelectInput(dpy, menuwin, MenuMask);
 
 	XMapWindow(dpy, menuwin);
 
-	drawn = 0;
+	ico = 1; /* warp to first item */
+	i = 0; /* save menu Item position */
 
 	for (;;) {
 		XNextEvent(dpy, &ev);
@@ -315,13 +333,16 @@ run_menu()
 				progname, ev.type);
 			break;
 		case ButtonRelease:
-			if (ev.xbutton.button != Button1)
+			/* allow button 1 or button 3 */
+			if (ev.xbutton.button == Button2)
 				break;
 			i = ev.xbutton.y/high;
 			if (ev.xbutton.x < 0 || ev.xbutton.x > wide)
 				break;
 			else if (i < 0 || i >= numitems)
 				break;
+			if (warp)
+				restoremouse();
 			if (strcmp(labels[i], "exit") == 0) {
 				if (commands[i] != labels[i]) {
 					spawn(commands[i]);
@@ -339,8 +360,6 @@ run_menu()
 			break;
 		case ButtonPress:
 		case MotionNotify:
-			if (! drawn)
-				break;
 			old = cur;
 			cur = ev.xbutton.y/high;
 			if (ev.xbutton.x < 0 || ev.xbutton.x > wide)
@@ -355,21 +374,35 @@ run_menu()
 				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
 			break;
 		case LeaveNotify:
-			drawn = 1;
 			cur = old = -1;
-			/* fall through */
-		case Expose:
-			if (drawn)
-				XClearWindow(dpy, menuwin);
-			for (i = 0; i < numitems; i++) {
-				tx = (wide - XTextWidth(font, labels[i], strlen(labels[i]))) / 2;
-				ty = i*high + font->ascent + 1;
-				XDrawString(dpy, menuwin, gc, tx, ty, labels[i], strlen(labels[i]));
+			XClearWindow(dpy, menuwin);
+			redraw(cur, high, wide);
+			break;
+		case ReparentNotify:
+		case ConfigureNotify:
+			/*
+			 * ignore these, they come from XMoveWindow
+			 * and are enabled by Struct..
+			 */
+			break;
+		case UnmapNotify:
+			ico = 1;
+			XClearWindow(dpy, menuwin);
+			break;
+		case MapNotify:
+			if (ico) {
+				if (teleport)
+					teleportmenu(i, wide, high);
+				else if (warp)
+					warpmouse(i, wide, high);
 			}
-			if (cur >= 0 && cur < numitems)
-				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
-
-			drawn = 1;
+			XClearWindow(dpy, menuwin);
+			redraw(cur = i, high, wide);
+			ico = 0;
+			break;
+		case Expose:
+			XClearWindow(dpy, menuwin);
+			redraw(cur, high, wide);
 			break;
 		case ClientMessage:
 			cmsg = &ev.xclient;
@@ -462,7 +495,7 @@ int wide, high;
 		g_argv, g_argc, sizehints, wmhints, classhints);
 }
 
-/* ask_wm_for_delete --- jump through hoops to ask window manager to delete us */
+/* ask_wm_for_delete --- jump through hoops to ask WM to delete us */
 
 void
 ask_wm_for_delete()
@@ -476,4 +509,64 @@ ask_wm_for_delete()
 	if (status != True)
 		fprintf(stderr, "%s: could not ask for clean delete\n",
 			progname);
+}
+
+/* redraw --- actually redraw the menu */
+
+void
+redraw(cur, high, wide)
+int cur, high, wide;
+{
+	int tx, ty, i;
+
+	for (i = 0; i < numitems; i++) {
+		tx = (wide - XTextWidth(font, labels[i], strlen(labels[i]))) / 2;
+		ty = i*high + font->ascent + 1;
+		XDrawString(dpy, menuwin, gc, tx, ty, labels[i], strlen(labels[i]));
+	}
+	if (cur >= 0 && cur < numitems)
+		XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
+}
+
+/* teleportmenu --- move the menu to the right place */
+
+void
+teleportmenu(cur, wide, high)
+int cur, wide, high;
+{
+	int x, y, dummy;
+	Window wdummy;
+
+	if (XQueryPointer(dpy, menuwin, &wdummy, &wdummy, &x, &y,
+			       &dummy, &dummy, &dummy))
+		XMoveWindow(dpy, menuwin, x-wide/2, y-cur*high-high/2);
+}
+
+/* warpmouse --- bring the mouse to the menu */
+
+void
+warpmouse(cur, wide, high)
+int cur, wide, high;
+{
+	int dummy;
+	Window wdummy;
+	int offset;
+
+	/* move tip of pointer into middle of menu item */
+	offset = (font->ascent + font->descent + 1) / 2;
+	offset += 6;	/* fudge factor */
+
+	if (XQueryPointer(dpy, menuwin, &wdummy, &wdummy, &savex, &savey,
+			       &dummy, &dummy, &dummy))
+		XWarpPointer(dpy, None, menuwin, 0, 0, 0, 0,
+				wide/2, cur*high-high/2+offset);
+}
+
+/* restoremouse --- put the mouse back where it was */
+
+void
+restoremouse()
+{
+	XWarpPointer(dpy, menuwin, root, 0, 0, 0, 0,
+				savex, savey);
 }
