@@ -1,10 +1,15 @@
 /*
  * 9menu.c
  *
- * Simple X menu-only program a la xmenu, using just Xlib.
- * Much code borrowed from 9wm and Matty's libXg version of 9menu.
+ * This program puts up a window that is just a menu, and executes
+ * commands that correspond to the items selected.
+ *
+ * Initial idea: Arnold Robbins
+ * Version using libXg: Matty Farrow (some ideas borrowed)
+ * This code by: David Hogan and Arnold Robbins
  *
  * Arnold Robbins
+ * arnold@skeeve.atl.ga.us
  */
 
 #include <stdio.h>
@@ -44,6 +49,7 @@ char *progname;		/* my name */
 char *displayname;	/* X display */
 char *fontname;		/* font */
 char *labelname;	/* window and icon name */
+int popup;		/* true if we're a popup window */
 
 char **labels;		/* list of labels and commands */
 char **commands;
@@ -82,7 +88,9 @@ char **argv;
 		} else if (strcmp(argv[i], "-display") == 0) {
 			displayname = argv[i+1];
 			i++;
-		} else if (argv[i][0] == '-')
+		} else if (strcmp(argv[i], "-popup") == 0)
+			popup++;
+		else if (argv[i][0] == '-')
 			usage();
 		else
 			break;
@@ -96,7 +104,7 @@ char **argv;
 	labels = &argv[i];
 	commands = (char **) calloc(numitems, sizeof(char *));
 	if (commands == NULL) {
-		fprintf(stderr, "%s: no memory!\n", argv[0]);
+		fprintf(stderr, "%s: no memory!\n", progname);
 		exit(1);
 	}
 
@@ -110,7 +118,7 @@ char **argv;
 
 	dpy = XOpenDisplay(displayname);
 	if (dpy == NULL) {
-		fprintf(stderr, "%s: cannot open display", argv[0]);
+		fprintf(stderr, "%s: cannot open display", progname);
 		if (displayname != NULL)
 			printf(" %s", displayname);
 		fprintf(stderr, "\n");
@@ -137,7 +145,7 @@ char **argv;
 	}
 
 	if (font == NULL) {
-		fprintf(stderr, "%s: fatal: cannot load a font\n", argv[0]);
+		fprintf(stderr, "%s: fatal: cannot load a font\n", progname);
 		exit(1);
 	}
 
@@ -172,14 +180,6 @@ char *com;
 	} else if (pid > 0)
 		return;
 
-/*	fd = open("/dev/tty", O_RDWR);
-	if (fd >= 0) {
-		close(0); dup(fd, 0);
-		close(1); dup(fd, 1);
-		close(2); dup(fd, 2);
-		for (fd = getdtablesize(); fd > 2; fd--)
-			close(fd);
-	} */
 	close(ConnectionNumber(dpy));
 	execl("/bin/sh", "sh", "-c", com, NULL);
 	_exit(1);
@@ -195,6 +195,8 @@ usage()
 	exit(1);
 }
 
+/* run_menu --- put up the window, execute selected commands */
+
 void
 run_menu()
 {
@@ -207,7 +209,7 @@ run_menu()
 
 	dx = 0;
 	for (i = 0; i < numitems; i++) {
-		wide = strlen(commands[i]) * font->max_bounds.width + 4;
+		wide = strlen(labels[i]) * font->max_bounds.width + 4;
 		if (wide > dx)
 			dx = wide;
 	}
@@ -243,7 +245,8 @@ run_menu()
 		XNextEvent(dpy, &ev);
 		switch (ev.type) {
 		default:
-			fprintf(stderr, "9menu: unknown ev.type %d\n", ev.type);
+			fprintf(stderr, "%s: unknown ev.type %d\n", 
+				progname, ev.type);
 			break;
 		case ButtonRelease:
 			if (ev.xbutton.button != Button1)
@@ -259,13 +262,15 @@ run_menu()
 				return;
 			}
 			spawn(commands[i]);
+			if (popup)
+				return;
 			if (cur >= 0 && cur < numitems)
 				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
 			cur = -1;
 			break;
 		case ButtonPress:
 		case MotionNotify:
-			if (!drawn)
+			if (! drawn)
 				break;
 			old = cur;
 			cur = ev.xbutton.y/high;
@@ -302,6 +307,8 @@ run_menu()
 	}
 }
 
+/* ask_wm_for_delete --- jump through hoops to ask window manager to delete us */
+
 void
 ask_wm_for_delete()
 {
@@ -312,5 +319,6 @@ ask_wm_for_delete()
 	status = XSetWMProtocols(dpy, menuwin, & wm_delete_window, 1);
 
 	if (status != True)
-		fprintf(stderr, "%s: could not ask for clean delete\n");
+		fprintf(stderr, "%s: could not ask for clean delete\n",
+			progname);
 }
