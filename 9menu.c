@@ -37,7 +37,13 @@
  * and down menu and RETURN to select an item.
  * Matthias Bauer
  * bauerm@immd1.informatik.uni-erlangen.de
- * June 2003
+ * June, 2003
+ *
+ * spawn() changed to do exec directly if -popup, based on
+ * suggestion from
+ * Andrew Stribblehill
+ * a.d.stribblehill@durham.ac.uk
+ * June, 2004
  */
 
 #include <stdio.h>
@@ -57,7 +63,7 @@
 #include <X11/keysymdef.h>
 #include <X11/keysym.h>
 
-char version[] = "@(#) 9menu version 1.7";
+char version[] = "@(#) 9menu version 1.8";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -356,7 +362,7 @@ char **argv;
 	 * black = BlackPixel(dpy, screen);
 	 * white = WhitePixel(dpy, screen);
 	 */
-	defcmap = DefaultColormap (dpy, screen);
+	defcmap = DefaultColormap(dpy, screen);
 	if (fgcname == NULL
 	    || XParseColor(dpy, defcmap, fgcname, &color) == 0
 	    || XAllocColor(dpy, defcmap, &color) == 0)
@@ -426,15 +432,22 @@ char *com;
 			sh_base = shell;
 	}
 
-	if (strncmp(com, "exec ", 5) != 0) {
-		pid = fork();
-		if (pid < 0) {
-			fprintf(stderr, "%s: can't fork\n", progname);
-			return;
-		} else if (pid > 0)
-			return;
-	} else {
-		com += 5;
+	/*
+	 * Since -popup means run command and exit, just
+	 * fall straight into exec code.  Thus only fork
+	 * if not popup.
+	 */
+	if (! popup) {
+		if (strncmp(com, "exec ", 5) != 0) {
+			pid = fork();
+			if (pid < 0) {
+				fprintf(stderr, "%s: can't fork\n", progname);
+				return;
+			} else if (pid > 0)
+				return;
+		} else {
+			com += 5;
+		}
 	}
 
 	close(ConnectionNumber(dpy));
