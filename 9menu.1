@@ -1,10 +1,12 @@
-.TH 9MENU 1 "June 19 1995" "Plan 9 For X"
+.TH 9MENU 1 "October 16 2001" "Plan 9 For X"
 .SH NAME
 9menu \- create a menu to run commands
 .SH SYNOPSIS
 .B 9menu
 [
 .BI \-display " displayname"
+] [
+.BI \-file " name"
 ] [
 .BI \-font " fname"
 ] [
@@ -14,7 +16,7 @@
 ] [
 .BI \-fg "foreground-color"
 ] [
-.BI \-bg "background-color"
+.BI \-bg " background-color"
 ] [
 .BI \-shell " prog"
 ] [
@@ -23,6 +25,8 @@
 .B \-popdown
 ] [
 .B \-iconic
+] [
+.B \-path
 ] [
 .B \-teleport
 ] [
@@ -52,8 +56,10 @@ A menu item consisting of the word
 .B exit
 will cause
 .I 9menu
-to exit.
-Otherwise, the menu should be deleted from the window manager.
+to exit when it is selected.
+Otherwise, to stop
+.I 9menu ,
+delete it using the window manager.
 The
 .B exit
 menu item can be anywhere in the list, although by convention it is last.
@@ -63,6 +69,11 @@ item, that command will be executed before
 .I 9menu
 exits.
 .PP
+If a menu item's command starts with the word
+.BR exec ,
+.I 9menu
+will cease operating after launching it.
+.PP
 .I 9menu
 accepts the following command line options.
 .RS
@@ -71,6 +82,14 @@ accepts the following command line options.
 Use the X display
 .IR displayname ,
 instead of the default display.
+.TP
+.BI \-file " filename"
+Read items to display from
+.IR filename ,
+in addition to any other command line arguments.  This is intended for use
+with
+.B #!
+in scripts.
 .TP
 .BI \-font " fname"
 Use the font
@@ -100,7 +119,7 @@ Set the foreground color to
 .IR foreground-color .
 By default, the foreground color is black.
 .TP
-.BI \-bg "background-color"
+.BI \-bg " background-color"
 Set the background color to
 .IR background-color .
 By default, the background color is white.
@@ -132,6 +151,9 @@ Once an item is selected, the menu window will automatically iconify itself.
 .B \-iconic
 Start up in the iconified state.
 .TP
+.B \-path
+Append the current directory to the command search path.
+.TP
 .B \-teleport
 Move the menu to where the mouse is when the menu is uniconified.
 This option is particularly useful when combined with
@@ -151,9 +173,9 @@ on the standard output, and then exits with an exit value of zero.
 .SH EXAMPLES
 .ft B
 .nf
-9menu -label Remotes xterm 'acme:rsh acme xterm' 'herman:rsh herman 9term' &
+9menu \-label Remotes xterm 'acme:rsh acme xterm' 'herman:rsh herman 9term' &
 .sp
-9menu -label 'X progs' ghostview xdvi xeyes xneko exit &
+9menu \-label 'X progs' ghostview xdvi xeyes xneko exit &
 .ft
 .fi
 .SH SEE ALSO
@@ -164,6 +186,13 @@ on the standard output, and then exits with an exit value of zero.
 .IR es (1).
 .PP
 .IR "The Plan 9 Programmer's Manual" .
+.SH VERSION
+This man page documents
+.I 9menu
+version 1.6.
+.PP
+Source code is available from
+.B ftp://ftp.freefriends.org/arnold/Source/9menu.shar.gz
 .SH AUTHORS
 The initial idea for this program was by Arnold Robbins, after having
 worked with John Mackin's GWM Blit emulation.
@@ -179,4 +208,9 @@ John O'Donnell supplied the basic code for the
 .B \-fg
 and
 .B \-bg
+options.
+Peter Seebach provided the base code for the
+.B \-file
+and
+.B \-path
 options.

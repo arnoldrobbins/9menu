@@ -1,4 +1,4 @@
-Wed Apr 23 22:37:48 EDT 1997
+Tue Oct 16 17:08:38 IST 2001
 
 This is 9menu, a simple program that allows you to create X menus from the
 shell, where each menu item will run a command. 9menu is intended for use
@@ -9,10 +9,12 @@ exclusively a pop-up menu, not what I wanted.
 
 The files are:
 
-README		--- this file
-9menu.1		--- man page for 9menu
-9menu.c		--- source code
-Makefile	--- simple makefile. Imake would be overkill
+README			--- this file
+9menu.1			--- man page for 9menu
+9menu.c			--- source code
+Imakefile		--- a contributed Imakefile,
+			    from Bengt Kleberg <bengt@softwell.se>
+Makefile.noimake	--- a simple makefile.
 
 Licence
 =======
@@ -35,4 +37,4 @@ Licence
 
 --
 Arnold Robbins
-arnold@gnu.ai.mit.edu
+arnold@skeeve.com

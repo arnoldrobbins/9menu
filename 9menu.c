@@ -11,7 +11,7 @@
  * Copyright (c), Arnold Robbins and David Hogan
  *
  * Arnold Robbins
- * arnold@skeeve.atl.ga.us
+ * arnold@skeeve.com
  * October, 1994
  *
  * Code added to cause pop-up (unIconify) to move menu to mouse.
@@ -27,12 +27,20 @@
  * John M. O'Donnell
  * odonnell@stpaul.lampf.lanl.gov
  * April, 1997
+ *
+ * Code added for -file and -path optioins.
+ * Peter Seebach
+ * seebs@plethora.net
+ * October, 2001
  */
 
 #include <stdio.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <X11/X.h>
@@ -40,7 +48,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "@(#) 9menu version 1.5";
+char version[] = "@(#) 9menu version 1.6";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -58,6 +66,8 @@ Atom wm_protocols;
 Atom wm_delete_window;
 int g_argc;			/* for XSetWMProperties to use */
 char **g_argv;
+int f_argc;			/* for labels read from files */
+char **f_argv;
 char *geometry = "";
 int savex, savey;
 Window savewindow;
@@ -76,7 +86,7 @@ char *fontlist[] = {	/* default font list if no -font */
 /* the 9menu icon, for garish window managers */
 #define nine_menu_width 40
 #define nine_menu_height 40
-static char nine_menu_bits[] = {
+static unsigned char nine_menu_bits[] = {
    0x00, 0x00, 0x00, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00,
    0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00,
    0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04,
@@ -99,6 +109,7 @@ char *progname;		/* my name */
 char *displayname;	/* X display */
 char *fontname;		/* font */
 char *labelname;	/* window and icon name */
+char *filename;		/* file to read options or labels from */
 int popup;		/* true if we're a popup window */
 int popdown;		/* autohide after running a command */
 int iconic;		/* start iconified */
@@ -114,34 +125,35 @@ char *shell = "/bin/sh";	/* default shell */
 extern void usage(), run_menu(), spawn(), ask_wm_for_delete();
 extern void reap(), set_wm_hints();
 extern void redraw(), teleportmenu(), warpmouse(), restoremouse();
+extern void memory();
+extern int args();
 
-/* main --- crack arguments, set up X stuff, run the main menu loop */
+/* memory --- print the out of memory message and die */
+
+void
+memory(s)
+char *s;
+{
+	fprintf(stderr, "%s: couldn't allocate memory for %s\n", progname, s);
+	exit(1);
+}
+
+/* args --- go through the argument list, set options */
 
 int
-main(argc, argv)
+args(argc, argv)
 int argc;
 char **argv;
 {
-	int i, j;
-	char *cp;
-	XGCValues gv;
-	unsigned long mask;
-
-	g_argc = argc;
-	g_argv = argv;
-
-	/* set default label name */
-	if ((cp = strrchr(argv[0], '/')) == NULL)
-		labelname = argv[0];
-	else
-		labelname = ++cp;
-
-	/* and program name for diagnostics */
-	progname = labelname;
-
-	for (i = 1; i < argc; i++) {
+	int i;
+	if (argc == 0 || argv == NULL || argv[0] == '\0')
+		return -1;
+	for (i = 0; i < argc && argv[i] != NULL; i++) {
 		if (strcmp(argv[i], "-display") == 0) {
 			displayname = argv[i+1];
+			i++;
+		} else if (strcmp(argv[i], "-file") == 0) {
+			filename = argv[i+1];
 			i++;
 		} else if (strcmp(argv[i], "-font") == 0) {
 			fontname = argv[i+1];
@@ -165,7 +177,19 @@ char **argv;
 			bgcname = argv[++i];
 		else if (strcmp(argv[i], "-iconic") == 0)
 			iconic++;
-		else if (strcmp(argv[i], "-teleport") == 0)
+		else if (strcmp(argv[i], "-path") == 0) {
+			char pathbuf[MAXPATHLEN];
+			char *s, *t;
+
+			s = getenv("PATH");
+			if (s != NULL) {
+				/* append current dir to PATH */
+				getcwd(pathbuf, MAXPATHLEN);
+				t = malloc(strlen(s) + strlen(pathbuf) + 7);
+				sprintf(t, "PATH=%s:%s", pathbuf, s);
+				putenv(t);
+			}
+		} else if (strcmp(argv[i], "-teleport") == 0)
 			teleport++;
 		else if (strcmp(argv[i], "-warp") == 0)
 			warp++;
@@ -177,26 +201,131 @@ char **argv;
 		else
 			break;
 	}
+	return i;
+}
+
+/* main --- crack arguments, set up X stuff, run the main menu loop */
+
+int
+main(argc, argv)
+int argc;
+char **argv;
+{
+	int i, j;
+	char *cp;
+	XGCValues gv;
+	unsigned long mask;
+	int nlabels = 0;
+
+	g_argc = argc;
+	g_argv = argv;
+
+	/* set default label name */
+	if ((cp = strrchr(argv[0], '/')) == NULL)
+		labelname = argv[0];
+	else
+		labelname = ++cp;
+
+	++argv;
+	--argc;
+
+	/* and program name for diagnostics */
+	progname = labelname;
+
+	i = args(argc, argv);
 
 	numitems = argc - i;
 
-	if (numitems <= 0)
+	if (numitems <= 0 && filename == NULL)
 		usage();
 
-	labels = &argv[i];
-	commands = (char **) malloc(numitems * sizeof(char *));
-	if (commands == NULL) {
-		fprintf(stderr, "%s: no memory!\n", progname);
-		exit(1);
+	if (filename) {
+		/* Read options and labels from file */
+		char fbuf[1024];
+		FILE *fp;
+
+		fp = fopen(filename, "r");
+		if (fp == NULL) {
+			fprintf(stderr, "%s: couldn't open '%s'\n", progname,
+				filename);
+			exit(1);
+		}
+		while (fgets(fbuf, sizeof fbuf, fp)) {
+			char *s = fbuf;
+			strtok(s, "\n");
+			if (s[0] == '-') {
+				char *temp[3];
+				temp[0] = s;
+				temp[1] = strchr(s, ' ');
+				if (temp[1]) {
+					*(temp[1]++) = '\0';
+					s = malloc(strlen(temp[1]) + 1);
+					if (s == NULL)
+						memory("temporary argument");
+					strcpy(s, temp[1]);
+					temp[1] = s;
+				}
+				temp[2] = 0;
+				args(temp[1] ? 2 : 1, temp);
+				continue;
+			}
+			if (s[0] == '#')
+				continue;
+			/* allow - in menu items to be escaped */
+			if (s[0] == '\\')
+				++s;
+			/* allocate space */
+			if (f_argc < nlabels + 1) {
+				int k;
+				char **temp = malloc(sizeof(char *) * (f_argc + 5));
+				if (temp == 0)
+					memory("temporary item");
+
+				for (k = 0; k < nlabels; k++)
+					temp[k] = f_argv[k];
+
+				free(f_argv);
+				f_argv = temp;
+				f_argc += 5;
+			}
+			f_argv[nlabels] = malloc(strlen(s) + 1);
+			if (f_argv[nlabels] == NULL)
+				memory("temporary text");
+			strcpy(f_argv[nlabels], s);
+			++nlabels;
+		}
 	}
 
+	labels = (char **) malloc((numitems + nlabels) * sizeof(char *));
+	commands = (char **) malloc((numitems + nlabels) * sizeof(char *));
+	if (commands == NULL || labels == NULL)
+		memory("command and label arrays");
+
 	for (j = 0; j < numitems; j++) {
+		labels[j] = argv[i + j];
 		if ((cp = strchr(labels[j], ':')) != NULL) {
 			*cp++ = '\0';
 			commands[j] = cp;
 		} else
 			commands[j] = labels[j];
 	}
+
+	/*
+	 * Now we no longer need i (our offset into argv) so we recycle it,
+	 * while keeping the old value of j!
+	 */
+	for (i = 0; i < nlabels; i++) {
+		labels[j] = f_argv[i];
+		if ((cp = strchr(labels[j], ':')) != NULL) {
+			*cp++ = '\0';
+			commands[j] = cp;
+		} else
+			commands[j] = labels[j];
+		++j;
+	}
+
+	/* And now we merge the totals */
+	numitems += nlabels;
 
 	dpy = XOpenDisplay(displayname);
 	if (dpy == NULL) {
@@ -283,12 +412,16 @@ char *com;
 			sh_base = shell;
 	}
 
-	pid = fork();
-	if (pid < 0) {
-		fprintf(stderr, "%s: can't fork\n", progname);
-		return;
-	} else if (pid > 0)
-		return;
+	if (strncmp(com, "exec ", 5) != 0) {
+		pid = fork();
+		if (pid < 0) {
+			fprintf(stderr, "%s: can't fork\n", progname);
+			return;
+		} else if (pid > 0)
+			return;
+	} else {
+		com += 5;
+	}
 
 	close(ConnectionNumber(dpy));
 	execl(shell, sh_base, "-c", com, NULL);
@@ -312,6 +445,7 @@ void
 usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
+	fprintf(stderr, "[-file filename] [-path]");
 	fprintf(stderr, "[-geometry geom] [-shell shell]  [-label name] ");
 	fprintf(stderr, "[-popup] [-popdown] [-iconic]  [-teleport] ");
 	fprintf(stderr, "[-warp]  [-version] menitem:command ...\n");
@@ -352,8 +486,8 @@ run_menu()
 
 	XMapWindow(dpy, menuwin);
 
-	ico = 1; /* warp to first item */
-	i = 0; /* save menu Item position */
+	ico = 1;	/* warp to first item */
+	i = 0;		/* save menu Item position */
 
 	for (;;) {
 		XNextEvent(dpy, &ev);
@@ -457,23 +591,14 @@ int wide, high;
 	XClassHint *classhints;
 	XTextProperty wname, iname;
 
-	if ((sizehints = XAllocSizeHints()) == NULL) {
-		fprintf(stderr, "%s: could not allocate size hints\n",
-			progname);
-		exit(1);
-	}
+	if ((sizehints = XAllocSizeHints()) == NULL)
+		memory("size hints");
 
-	if ((wmhints = XAllocWMHints()) == NULL) {
-		fprintf(stderr, "%s: could not allocate window manager hints\n",
-			progname);
-		exit(1);
-	}
+	if ((wmhints = XAllocWMHints()) == NULL)
+		memory("window manager hints");
 
-	if ((classhints = XAllocClassHint()) == NULL) {
-		fprintf(stderr, "%s: could not allocate class hints\n",
-			progname);
-		exit(1);
-	}
+	if ((classhints = XAllocClassHint()) == NULL)
+		memory("class hints");
 
 	/* fill in hints in order to parse geometry spec */
 	sizehints->width = sizehints->min_width = sizehints->max_width = wide;
@@ -489,17 +614,11 @@ int wide, high;
 	sizehints->width = sizehints->min_width = sizehints->max_width = wide;
 	sizehints->height = sizehints->min_height = sizehints->max_height = high;
 
-	if (XStringListToTextProperty(& labelname, 1, & wname) == 0) {
-		fprintf(stderr, "%s: could not allocate window name structure\n",
-			progname);
-		exit(1);
-	}
+	if (XStringListToTextProperty(& labelname, 1, & wname) == 0)
+		memory("window name structure");
 
-	if (XStringListToTextProperty(& labelname, 1, & iname) == 0) {
-		fprintf(stderr, "%s: could not allocate icon name structure\n",
-			progname);
-		exit(1);
-	}
+	if (XStringListToTextProperty(& labelname, 1, & iname) == 0)
+		memory("icon name structure");
 
 	menuwin = XCreateSimpleWindow(dpy, root, sizehints->x, sizehints->y,
 				sizehints->width, sizehints->height, 1, black, white);
