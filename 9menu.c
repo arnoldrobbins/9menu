@@ -10,6 +10,7 @@
  *
  * Arnold Robbins
  * arnold@skeeve.atl.ga.us
+ * October, 1994
  */
 
 #include <stdio.h>
@@ -21,7 +22,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "9menu version 0.1";
+char version[] = "@(#) 9menu version 1.0";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -33,6 +34,9 @@ unsigned long white;
 XFontStruct *font;
 Atom wm_protocols;
 Atom wm_delete_window;
+int g_argc;			/* for XSetWMProperties to use */
+char **g_argv;
+char *geometry = "";
 
 char *fontlist[] = {	/* default font list if no -font */
 	"pelm.latin1.9",
@@ -45,18 +49,33 @@ char *fontlist[] = {	/* default font list if no -font */
 	NULL
 };
 
-#define nine_menu_width 16
-#define nine_menu_height 16
+#define nine_menu_width 40
+#define nine_menu_height 40
 static char nine_menu_bits[] = {
-   0xff, 0xff, 0x01, 0x80, 0x01, 0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-   0xff, 0xff, 0x01, 0x80, 0x01, 0x80, 0xff, 0xff, 0x01, 0x80, 0x01, 0x80,
-   0xff, 0xff, 0x01, 0x80, 0x01, 0x80, 0xff, 0xff};
+   0x00, 0x00, 0x00, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00,
+   0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00,
+   0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04,
+   0x00, 0x80, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0xfc, 0xff, 0xff,
+   0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00,
+   0xfc, 0xff, 0xff, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00,
+   0x80, 0xe0, 0x01, 0x04, 0x00, 0x80, 0xe0, 0x00, 0xfc, 0xff, 0xff, 0xe0,
+   0x01, 0xfc, 0xff, 0xff, 0x20, 0x03, 0x04, 0x00, 0x80, 0x00, 0x06, 0x04,
+   0x00, 0x80, 0x00, 0x0c, 0xfc, 0xff, 0xff, 0x00, 0x08, 0xfc, 0xff, 0xff,
+   0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00,
+   0xfc, 0xff, 0xff, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00,
+   0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00,
+   0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04,
+   0x00, 0x80, 0x00, 0x00, 0xfc, 0xff, 0xff, 0x00, 0x00, 0xfc, 0xff, 0xff,
+   0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00,
+   0xfc, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 char *progname;		/* my name */
 char *displayname;	/* X display */
 char *fontname;		/* font */
 char *labelname;	/* window and icon name */
 int popup;		/* true if we're a popup window */
+int popdown;		/* autohide after running a command */
 int iconic;		/* start iconified */
 
 char **labels;		/* list of labels and commands */
@@ -64,6 +83,7 @@ char **commands;
 int numitems;
 
 extern void usage(), run_menu(), spawn(), ask_wm_for_delete();
+void set_wm_hints();
 
 /* main --- crack arguments, set up X stuff, run the main menu loop */
 
@@ -76,6 +96,9 @@ char **argv;
 	char *cp;
 	XGCValues gv;
 	unsigned long mask;
+
+	g_argc = argc;
+	g_argv = argv;
 
 	/* set default label name */
 	if ((cp = strchr(argv[0], '/')) == NULL)
@@ -96,11 +119,19 @@ char **argv;
 		} else if (strcmp(argv[i], "-display") == 0) {
 			displayname = argv[i+1];
 			i++;
+		} else if (strcmp(argv[i], "-geometry") == 0) {
+			geometry = argv[i+1];
+			i++;
 		} else if (strcmp(argv[i], "-popup") == 0)
 			popup++;
+		else if (strcmp(argv[i], "-popdown") == 0)
+			popdown++;
 		else if (strcmp(argv[i], "-iconic") == 0)
 			iconic++;
-		else if (argv[i][0] == '-')
+		else if (strcmp(argv[i], "-version") == 0) {
+			printf("%s\n", version);
+			exit(0);
+		} else if (argv[i][0] == '-')
 			usage();
 		else
 			break;
@@ -139,13 +170,15 @@ char **argv;
 	black = BlackPixel(dpy, screen);
 	white = WhitePixel(dpy, screen);
 
+	/* try user's font first */
 	if (fontname != NULL) {
 		font = XLoadQueryFont(dpy, fontname);
 		if (font == NULL)
 			fprintf(stderr, "%s: warning: can't load font %s\n",
-				argv[0], fontname);
+				progname, fontname);
 	}
 
+	/* if no user font, try one of our default fonts */
 	if (font == NULL) {
 		for (i = 0; fontlist[i] != NULL; i++) {
 			font = XLoadQueryFont(dpy, fontlist[i]);
@@ -201,7 +234,8 @@ void
 usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
-	fprintf(stderr, "[-label name] [-popup] [-iconic] menitem:command ...\n");
+	fprintf(stderr, "[-label name] [-popup] [-popdown] [-iconic] ");
+	fprintf(stderr, "[-geometry geom] [-version] menitem:command ...\n");
 	exit(1);
 }
 
@@ -212,9 +246,6 @@ run_menu()
 {
 	XEvent ev;
 	XClientMessageEvent *cmsg;
-	XSizeHints size;
-	Pixmap iconpixmap;
-	XWMHints wmhints;
 	int i, cur, old, wide, high, status, drawn;
 	int x, y, dx, dy;
 	int tx, ty;
@@ -232,35 +263,7 @@ run_menu()
 	high = font->ascent + font->descent + 1;
 	dy = numitems * high;
 
-	if (iconic)
-		menuwin = XCreateSimpleWindow(dpy, root, 1, 1, wide, dy,
-					1, black, white);
-	else
-		menuwin = XCreateSimpleWindow(dpy, root, 0, 0, wide, dy,
-					1, black, white);
-
-	iconpixmap = XCreateBitmapFromData(dpy, menuwin,
-					   nine_menu_bits,
-					   nine_menu_width,
-					   nine_menu_height );
-
-	wmhints.icon_pixmap = iconpixmap;
-	if (iconic)
-		wmhints.initial_state = IconicState;
-	else
-		wmhints.initial_state = NormalState;
-
-	wmhints.flags = IconPixmapHint | StateHint;
-	XSetWMHints(dpy, menuwin, & wmhints);
-
-	size.x = size.min_width = size.max_width = dx;
-	size.y = size.min_height = size.max_height = dy;
-	size.flags = PSize|PMinSize|PMaxSize;
-	XSetWMNormalHints(dpy, menuwin, &size);
-
-	/* set the label */
-	XStoreName(dpy, menuwin, labelname);
-	XSetIconName(dpy, menuwin, labelname);
+	set_wm_hints(wide, dy);
 
 	ask_wm_for_delete();
 
@@ -268,10 +271,8 @@ run_menu()
 	|LeaveWindowMask|PointerMotionMask|ButtonMotionMask|ExposureMask)
 
 	XSelectInput(dpy, menuwin, MenuMask);
-	if (iconic)
-		XMapWindow(dpy, menuwin);
-	else
-		XMapRaised(dpy, menuwin);
+
+	XMapWindow(dpy, menuwin);
 
 	drawn = 0;
 
@@ -291,8 +292,9 @@ run_menu()
 			else if (i < 0 || i >= numitems)
 				break;
 			if (strcmp(labels[i], "exit") == 0) {
-				if (commands[i] != labels[i])
+				if (commands[i] != labels[i]) {
 					spawn(commands[i]);
+				}
 				return;
 			}
 			spawn(commands[i]);
@@ -300,6 +302,8 @@ run_menu()
 				return;
 			if (cur >= 0 && cur < numitems)
 				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
+			if (popdown)
+				XIconifyWindow(dpy, menuwin, screen);
 			cur = -1;
 			break;
 		case ButtonPress:
@@ -343,6 +347,86 @@ run_menu()
 				return;
 		}
 	}
+}
+
+/* set_wm_hints --- set all the window manager hints */
+
+void
+set_wm_hints(wide, high)
+int wide, high;
+{
+	Pixmap iconpixmap;
+	XWMHints *wmhints;
+	XSizeHints *sizehints;
+	XClassHint *classhints;
+	XTextProperty wname, iname;
+
+	if ((sizehints = XAllocSizeHints()) == NULL) {
+		fprintf(stderr, "%s: could not allocate size hints\n",
+			progname);
+		exit(1);
+	}
+
+	if ((wmhints = XAllocWMHints()) == NULL) {
+		fprintf(stderr, "%s: could not allocate window manager hints\n",
+			progname);
+		exit(1);
+	}
+
+	if ((classhints = XAllocClassHint()) == NULL) {
+		fprintf(stderr, "%s: could not allocate class hints\n",
+			progname);
+		exit(1);
+	}
+
+	/* fill in hints in order to parse geometry spec */
+	sizehints->width = sizehints->min_width = sizehints->max_width = wide;
+	sizehints->height = sizehints->min_height = sizehints->max_height = high;
+	sizehints->flags = USSize|PSize|PMinSize|PMaxSize;
+	if (XWMGeometry(dpy, screen, geometry, "", 1, sizehints,
+			&sizehints->x, &sizehints->y,
+			&sizehints->width, &sizehints->height,
+			&sizehints->win_gravity) & (XValue|YValue))
+		sizehints->flags |= USPosition;
+
+	/* override -geometry for size of window */
+	sizehints->width = sizehints->min_width = sizehints->max_width = wide;
+	sizehints->height = sizehints->min_height = sizehints->max_height = high;
+
+	if (XStringListToTextProperty(& labelname, 1, & wname) == 0) {
+		fprintf(stderr, "%s: could allocate window name structure\n",
+			progname);
+		exit(1);
+	}
+
+	if (XStringListToTextProperty(& labelname, 1, & iname) == 0) {
+		fprintf(stderr, "%s: could allocate icon name structure\n",
+			progname);
+		exit(1);
+	}
+
+	menuwin = XCreateSimpleWindow(dpy, root, sizehints->x, sizehints->y,
+				sizehints->width, sizehints->height, 1, black, white);
+
+	iconpixmap = XCreateBitmapFromData(dpy, menuwin,
+					   nine_menu_bits,
+					   nine_menu_width,
+					   nine_menu_height);
+
+	wmhints->icon_pixmap = iconpixmap;
+	wmhints->input = False;		/* no keyboard input */
+	if (iconic)
+		wmhints->initial_state = IconicState;
+	else
+		wmhints->initial_state = NormalState;
+
+	wmhints->flags = IconPixmapHint | StateHint | InputHint;
+
+	classhints->res_name = progname;
+	classhints->res_class = "9menu";
+
+	XSetWMProperties(dpy, menuwin, & wname, & iname,
+		g_argv, g_argc, sizehints, wmhints, classhints);
 }
 
 /* ask_wm_for_delete --- jump through hoops to ask window manager to delete us */

@@ -1,4 +1,4 @@
-.TH 9MENU 1 "October 22 1994" "Plan 9 For X"
+.TH 9MENU 1 "October 30 1994" "Plan 9 For X"
 .SH NAME
 9menu \- create a menu to run commands
 .SH SYNOPSIS
@@ -12,7 +12,13 @@
 ] [
 .B \-popup
 ] [
+.B \-popdown
+] [
 .B \-iconic
+] [
+.B \-version
+] [
+.BI \-geometry " geom"
 ]
 .IR menuitem [: command ]
 \&...
@@ -36,6 +42,11 @@ Otherwise, the menu should be deleted from the window manager.
 The
 .B exit
 menu item can be anywhere in the list, although by convention it is last.
+If a command is supplied along with the
+.B exit
+item, that command will be executed before
+.I 9menu
+exits.
 .PP
 .I 9menu
 accepts the following command line options.
@@ -57,21 +68,36 @@ Change both the window and icon labels of the window to
 .IR name .
 The default label is the last componenet of the path used to run
 .IR 9menu ,
-typically, ``9menu''.
+typically,
+.BR 9menu .
 .TP
 .B \-popup
 Act like a pop-up menu. Once a menu item is selected,
 .I 9menu
 will exit.
+This option overrides
+.BR \-popdown .
+.TP
+.B \-popdown
+Once an item is selected, the menu window will automatically iconify itself.
 .TP
 .B \-iconic
 Start up in the iconified state.
+.TP
+.BI \-geometry " geom"
+Use
+.I geom
+(a geometry in standard X format) as the geometry of the menu.
+This is most useful for specifying the initial location of the menu.
+.I 9menu
+will override the size part of the geometry specification. The window will
+always be just large enough to hold the menu.
 .RE
 .SH EXAMPLES
 .ft B
 .nf
 9menu -label Remotes xterm 'acme:rsh acme xterm' 'herman:rsh herman 9term'
-.br
+.sp
 9menu -label 'X progs' ghostview xdvi xeyes xneko exit
 .ft
 .fi
@@ -83,13 +109,6 @@ Start up in the iconified state.
 .IR es (1).
 .PP
 .IR "The Plan 9 Programmer's Manual" .
-.SH BUGS
-When running under
-.IR 9wm ,
-the
-.B \-iconic
-option still requires that you place the menu somewhere.
-Then the window disappears.
 .SH AUTHORS
 The initial idea for this program was by Arnold Robbins, after having
 worked with John Mackin's GWM Blit emulation.
