@@ -26,7 +26,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "@(#) 9menu version 1.0";
+char version[] = "@(#) 9menu version 1.1";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -53,6 +53,7 @@ char *fontlist[] = {	/* default font list if no -font */
 	NULL
 };
 
+/* the 9menu icon, for garish window managers */
 #define nine_menu_width 40
 #define nine_menu_height 40
 static char nine_menu_bits[] = {
@@ -85,6 +86,8 @@ int iconic;		/* start iconified */
 char **labels;		/* list of labels and commands */
 char **commands;
 int numitems;
+
+char *shell = "/bin/sh";	/* default shell */
 
 extern void usage(), run_menu(), spawn(), ask_wm_for_delete();
 extern void reap(), set_wm_hints();
@@ -119,6 +122,9 @@ char **argv;
 			i++;
 		} else if (strcmp(argv[i], "-font") == 0) {
 			fontname = argv[i+1];
+			i++;
+		} else if (strcmp(argv[i], "-shell") == 0) {
+			shell = argv[i+1];
 			i++;
 		} else if (strcmp(argv[i], "-display") == 0) {
 			displayname = argv[i+1];
@@ -219,6 +225,15 @@ spawn(com)
 char *com;
 {
 	int pid, fd;
+	static char *sh_base = NULL;
+
+	if (sh_base == NULL) {
+		sh_base = strrchr(shell, '/');
+		if (sh_base != NULL)
+			sh_base++;
+		else
+			sh_base = shell;
+	}
 
 	pid = fork();
 	if (pid < 0) {
@@ -228,6 +243,7 @@ char *com;
 		return;
 
 	close(ConnectionNumber(dpy));
+	execl(shell, sh_base, "-c", com, NULL);
 	execl("/bin/sh", "sh", "-c", com, NULL);
 	_exit(1);
 }
@@ -264,7 +280,7 @@ run_menu()
 
 	dx = 0;
 	for (i = 0; i < numitems; i++) {
-		wide = strlen(labels[i]) * font->max_bounds.width + 4;
+		wide = XTextWidth(font, labels[i], strlen(labels[i])) + 4;
 		if (wide > dx)
 			dx = wide;
 	}
@@ -343,7 +359,7 @@ run_menu()
 			if (drawn)
 				XClearWindow(dpy, menuwin);
 			for (i = 0; i < numitems; i++) {
-				tx = (wide - strlen(labels[i])*font->max_bounds.width)/2;
+				tx = (wide - XTextWidth(font, labels[i], strlen(labels[i]))) / 2;
 				ty = i*high + font->ascent + 1;
 				XDrawString(dpy, menuwin, gc, tx, ty, labels[i], strlen(labels[i]));
 			}
@@ -357,6 +373,8 @@ run_menu()
 			if (cmsg->message_type == wm_protocols
 			    && cmsg->data.l[0] == wm_delete_window)
 				return;
+		case MappingNotify:	/* why do we get this? */
+			break;
 		}
 	}
 }
