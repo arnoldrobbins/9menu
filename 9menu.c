@@ -45,11 +45,19 @@ char *fontlist[] = {	/* default font list if no -font */
 	NULL
 };
 
+#define nine_menu_width 16
+#define nine_menu_height 16
+static char nine_menu_bits[] = {
+   0xff, 0xff, 0x01, 0x80, 0x01, 0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+   0xff, 0xff, 0x01, 0x80, 0x01, 0x80, 0xff, 0xff, 0x01, 0x80, 0x01, 0x80,
+   0xff, 0xff, 0x01, 0x80, 0x01, 0x80, 0xff, 0xff};
+
 char *progname;		/* my name */
 char *displayname;	/* X display */
 char *fontname;		/* font */
 char *labelname;	/* window and icon name */
 int popup;		/* true if we're a popup window */
+int iconic;		/* start iconified */
 
 char **labels;		/* list of labels and commands */
 char **commands;
@@ -90,6 +98,8 @@ char **argv;
 			i++;
 		} else if (strcmp(argv[i], "-popup") == 0)
 			popup++;
+		else if (strcmp(argv[i], "-iconic") == 0)
+			iconic++;
 		else if (argv[i][0] == '-')
 			usage();
 		else
@@ -191,7 +201,7 @@ void
 usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
-	fprintf(stderr, "[-label name] [-popup] menitem:command ...\n");
+	fprintf(stderr, "[-label name] [-popup] [-iconic] menitem:command ...\n");
 	exit(1);
 }
 
@@ -203,6 +213,8 @@ run_menu()
 	XEvent ev;
 	XClientMessageEvent *cmsg;
 	XSizeHints size;
+	Pixmap iconpixmap;
+	XWMHints wmhints;
 	int i, cur, old, wide, high, status, drawn;
 	int x, y, dx, dy;
 	int tx, ty;
@@ -220,16 +232,35 @@ run_menu()
 	high = font->ascent + font->descent + 1;
 	dy = numitems * high;
 
-	menuwin = XCreateSimpleWindow(dpy, root, 0, 0, wide, dy, 1, black, white);
+	if (iconic)
+		menuwin = XCreateSimpleWindow(dpy, root, 1, 1, wide, dy,
+					1, black, white);
+	else
+		menuwin = XCreateSimpleWindow(dpy, root, 0, 0, wide, dy,
+					1, black, white);
 
-	/* set the label */
-	XStoreName(dpy, menuwin, labelname);
-	XSetIconName(dpy, menuwin, labelname);
+	iconpixmap = XCreateBitmapFromData(dpy, menuwin,
+					   nine_menu_bits,
+					   nine_menu_width,
+					   nine_menu_height );
+
+	wmhints.icon_pixmap = iconpixmap;
+	if (iconic)
+		wmhints.initial_state = IconicState;
+	else
+		wmhints.initial_state = NormalState;
+
+	wmhints.flags = IconPixmapHint | StateHint;
+	XSetWMHints(dpy, menuwin, & wmhints);
 
 	size.x = size.min_width = size.max_width = dx;
 	size.y = size.min_height = size.max_height = dy;
 	size.flags = PSize|PMinSize|PMaxSize;
 	XSetWMNormalHints(dpy, menuwin, &size);
+
+	/* set the label */
+	XStoreName(dpy, menuwin, labelname);
+	XSetIconName(dpy, menuwin, labelname);
 
 	ask_wm_for_delete();
 
@@ -237,7 +268,10 @@ run_menu()
 	|LeaveWindowMask|PointerMotionMask|ButtonMotionMask|ExposureMask)
 
 	XSelectInput(dpy, menuwin, MenuMask);
-	XMapRaised(dpy, menuwin);
+	if (iconic)
+		XMapWindow(dpy, menuwin);
+	else
+		XMapRaised(dpy, menuwin);
 
 	drawn = 0;
 
