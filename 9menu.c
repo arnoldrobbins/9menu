@@ -26,7 +26,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "@(#) 9menu version 1.1";
+char version[] = "@(#) 9menu version 1.2";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -263,7 +263,8 @@ usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
 	fprintf(stderr, "[-label name] [-popup] [-popdown] [-iconic] ");
-	fprintf(stderr, "[-geometry geom] [-version] menitem:command ...\n");
+	fprintf(stderr, "[-geometry geom] [-version] [-shell shell ] ");
+	fprintf(stderr, "menitem:command ...\n");
 	exit(1);
 }
 
