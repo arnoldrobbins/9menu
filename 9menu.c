@@ -17,6 +17,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -83,7 +85,7 @@ char **commands;
 int numitems;
 
 extern void usage(), run_menu(), spawn(), ask_wm_for_delete();
-void set_wm_hints();
+extern void reap(), set_wm_hints();
 
 /* main --- crack arguments, set up X stuff, run the main menu loop */
 
@@ -200,7 +202,7 @@ char **argv;
 	mask = GCForeground | GCBackground | GCFunction | GCFont | GCLineWidth;
 	gc = XCreateGC(dpy, root, mask, &gv);
 
-	signal(SIGCHLD, SIG_IGN);
+	signal(SIGCHLD, reap);
 
 	run_menu();
 
@@ -226,6 +228,14 @@ char *com;
 	close(ConnectionNumber(dpy));
 	execl("/bin/sh", "sh", "-c", com, NULL);
 	_exit(1);
+}
+
+/* reap --- collect dead children */
+
+void
+reap()
+{
+	(void) wait((int *) NULL);
 }
 
 /* usage --- print a usage message and die */
