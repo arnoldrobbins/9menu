@@ -32,6 +32,12 @@
  * Peter Seebach
  * seebs@plethora.net
  * October, 2001
+ *
+ * Code added to allow up and down arrow keys to go up
+ * and down menu and RETURN to select an item.
+ * Matthias Bauer
+ * bauerm@immd1.informatik.uni-erlangen.de
+ * June 2003
  */
 
 #include <stdio.h>
@@ -44,11 +50,14 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <X11/X.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xproto.h>
+#include <X11/Xutil.h>
+#include <X11/keysymdef.h>
+#include <X11/keysym.h>
 
-char version[] = "@(#) 9menu version 1.6";
+char version[] = "@(#) 9menu version 1.7";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -104,6 +113,11 @@ static unsigned char nine_menu_bits[] = {
    0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00, 0x04, 0x00, 0x80, 0x00, 0x00,
    0xfc, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+/* Modify this to your liking */
+#define CONFIG_MENU_UP_KEY  XK_Up
+#define CONFIG_MENU_DOWN_KEY    XK_Down
+#define CONFIG_MENU_SELECT_KEY  XK_Return
 
 char *progname;		/* my name */
 char *displayname;	/* X display */
@@ -339,7 +353,7 @@ char **argv;
 	root = RootWindow(dpy, screen);
 	/*
 	 * This used to be
- 	 * black = BlackPixel(dpy, screen);
+	 * black = BlackPixel(dpy, screen);
 	 * white = WhitePixel(dpy, screen);
 	 */
 	defcmap = DefaultColormap (dpy, screen);
@@ -459,6 +473,7 @@ run_menu()
 {
 	XEvent ev;
 	XClientMessageEvent *cmsg;
+	KeySym key;
 	int i, cur, old, wide, high, ico, dx, dy;
 
 	dx = 0;
@@ -480,7 +495,7 @@ run_menu()
 
 #define	MenuMask (ButtonPressMask|ButtonReleaseMask\
 	|LeaveWindowMask|PointerMotionMask|ButtonMotionMask\
-	|ExposureMask|StructureNotifyMask)
+	|ExposureMask|StructureNotifyMask|KeyPressMask)
 
 	XSelectInput(dpy, menuwin, MenuMask);
 
@@ -493,7 +508,7 @@ run_menu()
 		XNextEvent(dpy, &ev);
 		switch (ev.type) {
 		default:
-			fprintf(stderr, "%s: unknown ev.type %d\n", 
+			fprintf(stderr, "%s: unknown ev.type %d\n",
 				progname, ev.type);
 			break;
 		case ButtonRelease:
@@ -536,6 +551,53 @@ run_menu()
 				XFillRectangle(dpy, menuwin, gc, 0, old*high, wide, high);
 			if (cur >= 0 && cur < numitems)
 				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
+			break;
+		case KeyPress:
+			key = XKeycodeToKeysym(dpy, ev.xkey.keycode, 0);	
+			if (key != CONFIG_MENU_UP_KEY
+			    && key != CONFIG_MENU_DOWN_KEY
+			    && key != CONFIG_MENU_SELECT_KEY)
+				break;
+
+			if (key == CONFIG_MENU_UP_KEY) {
+				old = cur;
+				cur--;
+			} else if (key == CONFIG_MENU_DOWN_KEY) {
+				old = cur;
+				cur++;
+			}
+			
+			while (cur < 0)
+				cur += numitems;
+		
+			cur %= numitems;
+
+			if (key == CONFIG_MENU_UP_KEY || key == CONFIG_MENU_DOWN_KEY) {
+				if (cur == old)
+					break;
+				if (old >= 0 && old < numitems && cur != -1)
+					XFillRectangle(dpy, menuwin, gc, 0, old*high, wide, high);
+				if (cur >= 0 && cur < numitems && cur != -1)
+					XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
+				break;
+			}
+
+			if (warp)
+				restoremouse();
+			if (key == CONFIG_MENU_SELECT_KEY) {
+				if (strcmp(labels[cur], "exit") == 0) {
+					if (commands[cur] != labels[cur]) {
+						spawn(commands[cur]);
+					}
+					return;
+				}
+				spawn(commands[cur]);
+			}
+
+			if (popup)
+				return;
+			if (popdown)
+				XIconifyWindow(dpy, menuwin, screen);
 			break;
 		case LeaveNotify:
 			cur = old = -1;

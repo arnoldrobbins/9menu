@@ -1,38 +1,38 @@
-.TH 9MENU 1 "October 16 2001" "Plan 9 For X"
+.TH 9MENU 1 "June 15 2003" "Plan 9 For X"
 .SH NAME
 9menu \- create a menu to run commands
 .SH SYNOPSIS
 .B 9menu
 [
+.BI \-bg " background-color"
+] [
 .BI \-display " displayname"
 ] [
 .BI \-file " name"
+] [
+.BI \-fg " foreground-color"
 ] [
 .BI \-font " fname"
 ] [
 .BI \-geometry " geom"
 ] [
-.BI \-label " name"
-] [
-.BI \-fg " foreground-color"
-] [
-.BI \-bg " background-color"
-] [
-.BI \-shell " prog"
-] [
-.B \-popup
-] [
-.B \-popdown
-] [
 .B \-iconic
+] [
+.BI \-label " name"
 ] [
 .B \-path
 ] [
+.B \-popdown
+] [
+.B \-popup
+] [
+.BI \-shell " prog"
+] [
 .B \-teleport
 ] [
-.B \-warp
-] [
 .B \-version
+] [
+.B \-warp
 ]
 .IR menuitem [: command ]
 \&...
@@ -42,11 +42,15 @@ is a simple program that accepts a list of menu item and command
 pairs on the command line.
 It creates a window that consists of nothing but a menu.
 When a particular item is selected, the corresponding command is executed.
+.PP
 Either
 .B Button1
 or
 .B Button3
 may be used to select an item.
+Alternatively, the UP-ARROW and DOWN-ARROW cursor keys may be used to
+highlight different items, with ENTER used to select the
+highlighted item.
 .PP
 Menu items and commands are separated by a colon.  The colon and command
 are optional. If they are missing, then the menu item is assumed to be
@@ -54,7 +58,7 @@ a command that can be executed directly.
 .PP
 A menu item consisting of the word
 .B exit
-will cause
+causes
 .I 9menu
 to exit when it is selected.
 Otherwise, to stop
@@ -65,18 +69,24 @@ The
 menu item can be anywhere in the list, although by convention it is last.
 If a command is supplied along with the
 .B exit
-item, that command will be executed before
+item, that command is executed before
 .I 9menu
 exits.
 .PP
 If a menu item's command starts with the word
 .BR exec ,
 .I 9menu
-will cease operating after launching it.
+ceases operating after launching it.
 .PP
 .I 9menu
-accepts the following command line options.
+accepts the following command line options,
+listed alphabetically:
 .RS
+.TP
+.BI \-bg " background-color"
+Set the background color to
+.IR background-color .
+By default, the background color is white.
 .TP
 .BI \-display " displayname"
 Use the X display
@@ -91,6 +101,11 @@ with
 .B #!
 in scripts.
 .TP
+.BI \-fg " foreground-color"
+Set the foreground color to
+.IR foreground-color .
+By default, the foreground color is black.
+.TP
 .BI \-font " fname"
 Use the font
 .IR fname ,
@@ -102,9 +117,13 @@ Use
 .I geom
 (a geometry in standard X format) as the geometry of the menu.
 This is most useful for specifying the initial location of the menu.
+Note that
 .I 9menu
-will override the size part of the geometry specification. The window will
-always be just large enough to hold the menu.
+overrides the size part of the geometry specification. The window is
+always just large enough to hold the menu.
+.TP
+.B \-iconic
+Start up in the iconified state.
 .TP
 .BI \-label " name"
 Change both the window and icon labels of the window to
@@ -114,15 +133,18 @@ The default label is the last component of the path used to run
 typically,
 .BR 9menu .
 .TP
-.BI \-fg " foreground-color"
-Set the foreground color to
-.IR foreground-color .
-By default, the foreground color is black.
+.B \-path
+Append the current directory to the command search path.
 .TP
-.BI \-bg " background-color"
-Set the background color to
-.IR background-color .
-By default, the background color is white.
+.B \-popdown
+Once an item is selected, the menu window automatically iconifies itself.
+.TP
+.B \-popup
+Act like a pop-up menu. Once a menu item is selected,
+.I 9menu
+exits.
+This option overrides
+.BR \-popdown .
 .TP
 .BI \-shell " prog"
 Use
@@ -133,35 +155,13 @@ A popular alternative shell is
 .IR rc (1).
 If the shell cannot be executed,
 .I 9menu
-will
+then
 .I silently
-fall back to using
+falls back to using
 .BR /bin/sh .
-.TP
-.B \-popup
-Act like a pop-up menu. Once a menu item is selected,
-.I 9menu
-will exit.
-This option overrides
-.BR \-popdown .
-.TP
-.B \-popdown
-Once an item is selected, the menu window will automatically iconify itself.
-.TP
-.B \-iconic
-Start up in the iconified state.
-.TP
-.B \-path
-Append the current directory to the command search path.
 .TP
 .B \-teleport
 Move the menu to where the mouse is when the menu is uniconified.
-This option is particularly useful when combined with
-.BR \-popdown .
-.TP
-.B \-warp
-Warp the mouse to the menu when the menu is uniconified.
-After the selection is made, restore the mouse to where it was.
 This option is particularly useful when combined with
 .BR \-popdown .
 .TP
@@ -169,6 +169,12 @@ This option is particularly useful when combined with
 This option prints the version of
 .I 9menu
 on the standard output, and then exits with an exit value of zero.
+.TP
+.B \-warp
+Warp the mouse to the menu when the menu is uniconified.
+After the selection is made, restore the mouse to where it was.
+This option is particularly useful when combined with
+.BR \-popdown .
 .RE
 .SH EXAMPLES
 .ft B
@@ -189,10 +195,12 @@ on the standard output, and then exits with an exit value of zero.
 .SH VERSION
 This man page documents
 .I 9menu
-version 1.6.
+version 1.7.
 .PP
 Source code is available from
 .B ftp://ftp.freefriends.org/arnold/Source/9menu.shar.gz
+.SH BUGS
+This program has grown to have too many options.
 .SH AUTHORS
 The initial idea for this program was by Arnold Robbins, after having
 worked with John Mackin's GWM Blit emulation.
@@ -214,3 +222,4 @@ Peter Seebach provided the base code for the
 and
 .B \-path
 options.
+Matthias Bauer made it work with the keyboard.
