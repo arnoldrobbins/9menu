@@ -1,4 +1,4 @@
-Thu Nov 10 07:08:10 EST 1994
+Wed Dec 14 06:32:22 EST 1994
 
 This is 9menu, a simple program that allows you to create X menus from the
 shell, where each menu item will run a command. 9menu is intended for use
@@ -13,7 +13,6 @@ README		--- this file
 9menu.1		--- man page for 9menu
 9menu.c		--- source code
 Makefile	--- simple makefile. Imake would be overkill
-9wm.DIFF	--- my recommended patch to 9wm version 0.96
 
 Licence
 =======
