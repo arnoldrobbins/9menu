@@ -460,13 +460,13 @@ int wide, high;
 	sizehints->height = sizehints->min_height = sizehints->max_height = high;
 
 	if (XStringListToTextProperty(& labelname, 1, & wname) == 0) {
-		fprintf(stderr, "%s: could allocate window name structure\n",
+		fprintf(stderr, "%s: could not allocate window name structure\n",
 			progname);
 		exit(1);
 	}
 
 	if (XStringListToTextProperty(& labelname, 1, & iname) == 0) {
-		fprintf(stderr, "%s: could allocate icon name structure\n",
+		fprintf(stderr, "%s: could not allocate icon name structure\n",
 			progname);
 		exit(1);
 	}
