@@ -191,7 +191,7 @@ void
 usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
-	fprintf(stderr, "[-label name] menitem:command ...\n");
+	fprintf(stderr, "[-label name] [-popup] menitem:command ...\n");
 	exit(1);
 }
 
@@ -234,7 +234,7 @@ run_menu()
 	ask_wm_for_delete();
 
 #define	MenuMask (ButtonPressMask|ButtonReleaseMask\
-				|ButtonMotionMask|ExposureMask)
+	|LeaveWindowMask|PointerMotionMask|ButtonMotionMask|ExposureMask)
 
 	XSelectInput(dpy, menuwin, MenuMask);
 	XMapRaised(dpy, menuwin);
@@ -285,6 +285,10 @@ run_menu()
 			if (cur >= 0 && cur < numitems)
 				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
 			break;
+		case LeaveNotify:
+			drawn = 1;
+			cur = old = -1;
+			/* fall through */
 		case Expose:
 			if (drawn)
 				XClearWindow(dpy, menuwin);
