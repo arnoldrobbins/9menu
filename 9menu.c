@@ -8,6 +8,8 @@
  * Version using libXg: Matty Farrow (some ideas borrowed)
  * This code by: David Hogan and Arnold Robbins
  *
+ * Copyright (c), Arnold Robbins and David Hogan
+ *
  * Arnold Robbins
  * arnold@skeeve.atl.ga.us
  * October, 1994
