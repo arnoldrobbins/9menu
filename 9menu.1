@@ -12,6 +12,10 @@
 ] [
 .BI \-label " name"
 ] [
+.BI \-fg "foreground-color"
+] [
+.BI \-bg "background-color"
+] [
 .BI \-shell " prog"
 ] [
 .B \-popup
@@ -91,6 +95,16 @@ The default label is the last component of the path used to run
 typically,
 .BR 9menu .
 .TP
+.BI \-fg "foreground-color"
+Set the foreground color to
+.IR foreground-color .
+By default, the foreground color is black.
+.TP
+.BI \-bg "background-color"
+Set the background color to
+.IR background-color .
+By default, the background color is white.
+.TP
 .BI \-shell " prog"
 Use
 .I prog
@@ -154,10 +168,15 @@ on the standard output, and then exits with an exit value of zero.
 The initial idea for this program was by Arnold Robbins, after having
 worked with John Mackin's GWM Blit emulation.
 Matty Farrow wrote a version using libXg, from which some ideas were borrowed.
+This code was written by David Hogan and Arnold Robbins.
 Rich Salz motivated the
 .B \-shell
 option.
 Christopher Platt motivated the
 .B \-teleport
 option.
-This code was written by David Hogan and Arnold Robbins.
+John O'Donnell supplied the basic code for the
+.B \-fg
+and
+.B \-bg
+options.

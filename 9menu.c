@@ -22,6 +22,11 @@
  * Said code moved to -teleport option, and -warp option added.
  * Arnold Robbins
  * June, 1995
+ *
+ * Code added to allow -fg and -bg colors.
+ * John M. O'Donnell
+ * odonnell@stpaul.lampf.lanl.gov
+ * April, 1997
  */
 
 #include <stdio.h>
@@ -35,7 +40,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-char version[] = "@(#) 9menu version 1.4";
+char version[] = "@(#) 9menu version 1.5";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -44,6 +49,10 @@ Window menuwin;
 GC gc;
 unsigned long black;
 unsigned long white;
+char *fgcname = NULL;
+char *bgcname = NULL;
+Colormap defcmap;
+XColor color;
 XFontStruct *font;
 Atom wm_protocols;
 Atom wm_delete_window;
@@ -150,6 +159,10 @@ char **argv;
 			popup++;
 		else if (strcmp(argv[i], "-popdown") == 0)
 			popdown++;
+		else if (strcmp(argv[i], "-fg") == 0)
+			fgcname = argv[++i];
+		else if (strcmp(argv[i], "-bg") == 0)
+			bgcname = argv[++i];
 		else if (strcmp(argv[i], "-iconic") == 0)
 			iconic++;
 		else if (strcmp(argv[i], "-teleport") == 0)
@@ -195,8 +208,25 @@ char **argv;
 	}
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
-	black = BlackPixel(dpy, screen);
-	white = WhitePixel(dpy, screen);
+	/*
+	 * This used to be
+ 	 * black = BlackPixel(dpy, screen);
+	 * white = WhitePixel(dpy, screen);
+	 */
+	defcmap = DefaultColormap (dpy, screen);
+	if (fgcname == NULL
+	    || XParseColor(dpy, defcmap, fgcname, &color) == 0
+	    || XAllocColor(dpy, defcmap, &color) == 0)
+		black = BlackPixel(dpy, screen);
+	else
+		black = color.pixel;
+
+	if (bgcname == NULL
+	    || XParseColor(dpy, defcmap, bgcname, &color) == 0
+	    || XAllocColor(dpy, defcmap, &color) == 0)
+		white = WhitePixel(dpy, screen);
+	else
+		white = color.pixel;
 
 	/* try user's font first */
 	if (fontname != NULL) {
@@ -491,8 +521,23 @@ int wide, high;
 	classhints->res_name = progname;
 	classhints->res_class = "9menu";
 
+#ifdef SET_PROPERTIES_MANUALLY
+	/*
+	 * For some reason, XSetWMProperties (see below) is failing
+	 * John O'Donnell replaces it with the following commands
+	 * (this leaves out XSetWMClientMachine,
+	 * and also environment variable checking from ClassHint)
+	 */
+	XSetWMName(dpy, menuwin, &wname);
+	XSetWMIconName(dpy, menuwin, &iname);
+	XSetCommand(dpy, menuwin, g_argv, g_argc);
+	XSetWMHints(dpy, menuwin, wmhints);
+	XSetClassHint(dpy, menuwin, classhints);
+	XSetWMNormalHints(dpy, menuwin, sizehints);
+#else
 	XSetWMProperties(dpy, menuwin, & wname, & iname,
 		g_argv, g_argc, sizehints, wmhints, classhints);
+#endif
 }
 
 /* ask_wm_for_delete --- jump through hoops to ask WM to delete us */

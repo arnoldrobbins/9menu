@@ -1,4 +1,4 @@
-Mon Jun 19 23:04:23 EDT 1995
+Wed Apr 23 22:37:48 EDT 1997
 
 This is 9menu, a simple program that allows you to create X menus from the
 shell, where each menu item will run a command. 9menu is intended for use
@@ -35,4 +35,4 @@ Licence
 
 --
 Arnold Robbins
-arnold@skeeve.atl.ga.us
+arnold@gnu.ai.mit.edu
