@@ -1,0 +1,97 @@
+.TH 9MENU 1 "October 22 1994" "Plan 9 For X"
+.SH NAME
+9menu \- create a menu to run commands
+.SH SYNOPSIS
+.B 9menu
+[
+.BI \-display " displayname"
+] [
+.BI \-font " fname"
+] [
+.BI \-label " name"
+] [
+.B \-popup
+] [
+.B \-iconic
+]
+.IR menuitem [: command ]
+\&...
+.SH DESCRIPTION
+.I 9menu
+is a simple program that accepts a list of menu item and command
+pairs on the command line.
+It creates a window that consists of nothing but a menu.
+When a particular item is selected, the corresponding command is executed.
+.PP
+Menu items and commands are separated by a colon.  The colon and command
+are optional. If they are missing, then the menu item is assumed to be
+the name of a program that can be executed directly.
+.PP
+A menu item consisting of the word
+.B exit
+will cause
+.I 9menu
+to exit.
+Otherwise, the menu should be deleted from the window manager.
+The
+.B exit
+menu item can be anywhere in the list, although by convention it is last.
+.PP
+.I 9menu
+accepts the following command line options.
+.RS
+.TP
+.BI \-display " displayname"
+Use the X display
+.IR displayname ,
+instead of the default display.
+.TP
+.BI \-font " fname"
+Use the font
+.IR fname ,
+instead of one of the default fonts built into
+.IR 9wm .
+.TP
+.BI \-label " name"
+Change both the window and icon labels of the window to
+.IR name .
+The default label is the last componenet of the path used to run
+.IR 9menu ,
+typically, ``9menu''.
+.TP
+.B \-popup
+Act like a pop-up menu. Once a menu item is selected,
+.I 9menu
+will exit.
+.TP
+.B \-iconic
+Start up in the iconified state.
+.RE
+.SH EXAMPLES
+.ft B
+.nf
+9menu -label Remotes xterm 'acme:rsh acme xterm' 'herman:rsh herman 9term'
+.br
+9menu -label 'X progs' ghostscript xdvi xeyes xneko exit
+.ft
+.fi
+.SH SEE ALSO
+.IR sam (1),
+.IR 9term (1),
+.IR 9wm (1),
+.IR rc (1),
+.IR es (1).
+.PP
+.IR "The Plan 9 Programmer's Manual" .
+.SH BUGS
+When running under
+.IR 9wm ,
+the
+.B \-iconic
+option still requires that you place the menu somewhere.
+Then the window disappears.
+.SH AUTHORS
+The initial idea for this program was by Arnold Robbins, after having
+worked with John Mackin's GWM Blit emulation.
+Matty Farrow wrote a version using libXg, from which some ideas were borrowed.
+This code was written by David Hogan and Arnold Robbins.
