@@ -1,4 +1,4 @@
-.TH 9MENU 1 "October 30 1994" "Plan 9 For X"
+.TH 9MENU 1 "December 14 1994" "Plan 9 For X"
 .SH NAME
 9menu \- create a menu to run commands
 .SH SYNOPSIS
@@ -9,6 +9,8 @@
 .BI \-font " fname"
 ] [
 .BI \-label " name"
+] [
+.BI \-shell " prog"
 ] [
 .B \-popup
 ] [
@@ -71,6 +73,20 @@ The default label is the last componenet of the path used to run
 typically,
 .BR 9menu .
 .TP
+.BI \-shell " prog"
+Use
+.I prog
+as the shell to run commands, instead of
+.BR /bin/sh .
+A popular alternative shell is
+.IR rc (1).
+If the shell cannot be executed,
+.I 9menu
+will
+.I silently
+fall back to using
+.BR /bin/sh .
+.TP
 .B \-popup
 Act like a pop-up menu. Once a menu item is selected,
 .I 9menu
@@ -118,4 +134,7 @@ on the standard output, and then exits.
 The initial idea for this program was by Arnold Robbins, after having
 worked with John Mackin's GWM Blit emulation.
 Matty Farrow wrote a version using libXg, from which some ideas were borrowed.
+Rich Salz motivated the
+.B \-shell
+option.
 This code was written by David Hogan and Arnold Robbins.
