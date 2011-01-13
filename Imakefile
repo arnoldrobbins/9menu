@@ -1,6 +1,6 @@
        INCLUDES = -I$(TOP)
-        DEPLIBS = $(DEPXLIB)
-LOCAL_LIBRARIES = $(XLIB)
+        DEPLIBS = $(DEPXLIBONLY)
+LOCAL_LIBRARIES = $(XLIBONLY)
         DEFINES = -DSHAPE #-DDEBUG -DDEBUG_EV
            SRCS = 9menu.c
            OBJS = 9menu.o
