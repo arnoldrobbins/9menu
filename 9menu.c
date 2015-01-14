@@ -44,6 +44,13 @@
  * Andrew Stribblehill
  * a.d.stribblehill@durham.ac.uk
  * June, 2004
+ *
+ * Allow "-" to mean read info from stdin.
+ * suggestion from
+ * Peter Bailey, by way of
+ * Andrew Stribblehill
+ * a.d.stribblehill@durham.ac.uk
+ * August, 2005
  */
 
 #include <stdio.h>
@@ -63,7 +70,7 @@
 #include <X11/keysymdef.h>
 #include <X11/keysym.h>
 
-char version[] = "@(#) 9menu version 1.8";
+char version[] = "@(#) 9menu version 1.9";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -264,7 +271,11 @@ char **argv;
 		char fbuf[1024];
 		FILE *fp;
 
-		fp = fopen(filename, "r");
+		if (strcmp(filename, "-") == 0) {
+			fp = stdin;
+		} else {
+			fp = fopen(filename, "r");
+		}
 		if (fp == NULL) {
 			fprintf(stderr, "%s: couldn't open '%s'\n", progname,
 				filename);
