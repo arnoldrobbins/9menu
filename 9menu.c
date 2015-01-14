@@ -51,6 +51,10 @@
  * Andrew Stribblehill
  * a.d.stribblehill@durham.ac.uk
  * August, 2005
+ *
+ * Fix compile warnings (getcwd and getting a key sym).
+ * Arnold Robbins
+ * January, 2015.
  */
 
 #include <stdio.h>
@@ -69,6 +73,7 @@
 #include <X11/Xutil.h>
 #include <X11/keysymdef.h>
 #include <X11/keysym.h>
+#include <X11/XKBlib.h>
 
 char version[] = "@(#) 9menu version 1.9";
 
@@ -211,7 +216,7 @@ char **argv;
 			s = getenv("PATH");
 			if (s != NULL) {
 				/* append current dir to PATH */
-				getcwd(pathbuf, MAXPATHLEN);
+				char *cp = getcwd(pathbuf, MAXPATHLEN);
 				t = malloc(strlen(s) + strlen(pathbuf) + 7);
 				sprintf(t, "PATH=%s:%s", pathbuf, s);
 				putenv(t);
@@ -577,7 +582,9 @@ run_menu()
 				XFillRectangle(dpy, menuwin, gc, 0, cur*high, wide, high);
 			break;
 		case KeyPress:
-			key = XKeycodeToKeysym(dpy, ev.xkey.keycode, 0);	
+			/* http://stackoverflow.com/questions/9838385/replace-of-xkeycodetokeysym */
+			key = XkbKeycodeToKeysym(dpy, ev.xkey.keycode, 0,
+					ev.xkey.state & ShiftMask ? 1 : 0);	
 			if (key != CONFIG_MENU_UP_KEY
 			    && key != CONFIG_MENU_DOWN_KEY
 			    && key != CONFIG_MENU_SELECT_KEY)
