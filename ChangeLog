@@ -1,0 +1,137 @@
+2015-03-19         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* ChangeLog: Reconstituted from check-in logs and diffs.
+	* 9menu.c: Typo fix. Convert all function signatures to
+	ANSI style.
+	* README: Update the date.
+
+2015-01-14         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (main): Fix compile warnings.
+	(run_menu): Call XkbKeycodeToKeysym() instead of XKeycodeToKeysym().
+
+2011-01-13         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Allow - as input filename. Suggestion from Peter Bailey, by way of
+	Andrew Stribblehill <a.d.stribblehill@durham.ac.uk>.  From email
+	August 2005.
+
+	* 9menu.c (main): Allow - as input filename to mean stdin.
+	(version): Increment to 1.9.
+	* 9menu.1: Document same.
+	* Makefile (CXXDEBUGFLAGS): Add -Wall.
+	* Imakefile: Improved some.
+
+2004-06-01         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9menu.1: Update version to 1.8.
+	* 9menu.c (main): Fix so -popup execs directly.
+	Suggestion from Andrew Stribblehill <a.d.stribblehill@durham.ac.uk>.
+	(version): Increment to 1.8.
+
+2003-06-15         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9menu.1: Update version to 1.7. Lots of editing and cleanup.
+	* 9menu.c (run_menu): Make it work with the up and down arrow keys
+	on the keyboard. Code contributed by Matthias Bauer
+	<bauerm@immd1.informatik.uni-erlangen.de>
+	(version): Increment to 1.7.
+
+2002-04-16         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9menu.1: Update version to 1.6. Document new options.
+	My email address updated.
+	* 9menu.c (main): New options, -file and -path. Code contributed
+	by Peter Seebach <seebs@plethora.net>, in October, 2001.
+	My email address updated.
+	(version): Increment to 1.6.
+	* Makefile.noimake: Renamed from Makefile.
+	* Imakefile: Created.
+	* Makefile: Generated via imake.
+
+2001-01-16         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.  My email address updated.
+	* 9menu.1: Update version to 1.5. Document new options.
+	* 9menu.c (main): New options, -fg and -bg.  Code supplied by
+	John M. O'Donnell <odonnell@stpaul.lampf.lanl.gov>, in April, 1997.
+	(version): Increment to 1.5.
+
+1997-04-27         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (set_wm_hints): Fix typos in error messages.
+
+1995-06-20         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9menu.1: Update version to 1.4. Document new options.  Option
+	ordering regularized and consistent everywhere.
+	* 9menu.c (main): New options, -warp and -teleport.  Christopher Platt
+	<platt@coos.dartmouth.edu> motivated the -teleport option. Option
+	ordering regularized and consistent everywhere.
+	(redraw, teleportmenu, warpmouse, restoremouse): New functions.
+	(version): Increment to 1.4.
+
+1995-01-01         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9menu.c (reap): Portability fix.
+	(usage): Fix typo.
+	(version): Increment to 1.3.
+
+1994-12-25         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9menu.c (reap): Portability fix.
+	(usage): Update usage.
+	(version): Increment to 1.2.
+
+1994-12-14         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* README: Update the date.
+	* 9wm.DIFF: Removed.
+	* 9menu.c (main): Add -shell option. Motivated by Rich Salz.
+	(run_menu): Use XTextWidth in size calculations per fix for
+	9wm from Dave Edmondson <davided@sco.com>. Add empty MappingNotify.
+	(version): Increment to 1.1.
+	* 9menu.1: Document -shell option.
+
+1994-11-10         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c: Add copyright line.
+	* README: New file.
+
+1994-11-09         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (main): Change call to signal().
+	(reap): New function to reap dead children.
+
+1994-10-31         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (main): New options -geometry and -version.
+	-iconic changed to -popdown.
+	(nine_menu_bits): Update the icon.
+	(set_wm_hints): New function.
+	(usage): Updated.
+	(version): Increment to 1.0.
+	* 9menu.1: Document the new options, update examples.
+
+1994-10-23         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (nine_menu_bits): Add an icon.
+	(main): Add -iconic option. Update comments with credits.
+	Use labels to compute menu size. Add comments where needed.
+	Add -popup option.
+	(progname): Use everywhere.
+	(usage): Updated.
+	(run_menu): Do iconifying of menu.
+	* 9menu.1: Created.
+	* Makefile: Created.
+
+1994-10-22         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c: Created. Not sure of exactly when, but first check-in
+	to RCS was on this date.
