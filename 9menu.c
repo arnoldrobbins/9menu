@@ -28,7 +28,7 @@
  * odonnell@stpaul.lampf.lanl.gov
  * April, 1997
  *
- * Code added for -file and -path optioins.
+ * Code added for -file and -path options.
  * Peter Seebach
  * seebs@plethora.net
  * October, 2001
@@ -163,8 +163,7 @@ extern int args();
 /* memory --- print the out of memory message and die */
 
 void
-memory(s)
-char *s;
+memory(char *s)
 {
 	fprintf(stderr, "%s: couldn't allocate memory for %s\n", progname, s);
 	exit(1);
@@ -173,13 +172,13 @@ char *s;
 /* args --- go through the argument list, set options */
 
 int
-args(argc, argv)
-int argc;
-char **argv;
+args(int argc, char **argv)
 {
 	int i;
+
 	if (argc == 0 || argv == NULL || argv[0] == '\0')
 		return -1;
+
 	for (i = 0; i < argc && argv[i] != NULL; i++) {
 		if (strcmp(argv[i], "-display") == 0) {
 			displayname = argv[i+1];
@@ -239,9 +238,7 @@ char **argv;
 /* main --- crack arguments, set up X stuff, run the main menu loop */
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
 	int i, j;
 	char *cp;
@@ -434,8 +431,7 @@ char **argv;
 /* spawn --- run a command */
 
 void
-spawn(com)
-char *com;
+spawn(char *com)
 {
 	int pid;
 	static char *sh_base = NULL;
@@ -475,8 +471,7 @@ char *com;
 /* reap --- collect dead children */
 
 void
-reap(s)
-int s;
+reap(int s)
 {
 	(void) wait((int *) NULL);
 	signal(s, reap);
@@ -675,8 +670,7 @@ run_menu()
 /* set_wm_hints --- set all the window manager hints */
 
 void
-set_wm_hints(wide, high)
-int wide, high;
+set_wm_hints(int wide, int high)
 {
 	Pixmap iconpixmap;
 	XWMHints *wmhints;
@@ -771,8 +765,7 @@ ask_wm_for_delete()
 /* redraw --- actually redraw the menu */
 
 void
-redraw(cur, high, wide)
-int cur, high, wide;
+redraw(int cur, int high, int wide)
 {
 	int tx, ty, i;
 
@@ -788,8 +781,7 @@ int cur, high, wide;
 /* teleportmenu --- move the menu to the right place */
 
 void
-teleportmenu(cur, wide, high)
-int cur, wide, high;
+teleportmenu(int cur, int wide, int high)
 {
 	int x, y, dummy;
 	Window wdummy;
@@ -802,8 +794,7 @@ int cur, wide, high;
 /* warpmouse --- bring the mouse to the menu */
 
 void
-warpmouse(cur, wide, high)
-int cur, wide, high;
+warpmouse(int cur, int wide, int high)
 {
 	int dummy;
 	Window wdummy;
