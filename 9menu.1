@@ -1,4 +1,4 @@
-.TH 9MENU 1 "January 13 2011" "Plan 9 For X"
+.TH 9MENU 1 "June 25 2015"
 .SH NAME
 9menu \- create a menu to run commands
 .SH SYNOPSIS
@@ -81,7 +81,6 @@ ceases operating after launching it.
 .I 9menu
 accepts the following command line options,
 listed alphabetically:
-.RS
 .TP
 .BI \-bg " background-color"
 Set the background color to
@@ -182,7 +181,6 @@ Warp the mouse to the menu when the menu is uniconified.
 After the selection is made, restore the mouse to where it was.
 This option is particularly useful when combined with
 .BR \-popdown .
-.RE
 .SH EXAMPLES
 .ft B
 .nf
@@ -195,17 +193,19 @@ This option is particularly useful when combined with
 .IR sam (1),
 .IR 9term (1),
 .IR 9wm (1),
-.IR rc (1),
-.IR es (1).
+.IR rc (1).
 .PP
 .IR "The Plan 9 Programmer's Manual" .
 .SH VERSION
 This man page documents
 .I 9menu
-version 1.8.
+version 1.9.
 .PP
 Source code is available from
-.B ftp://ftp.freefriends.org/arnold/Source/9menu.shar.gz
+.BR ftp://ftp.freefriends.org/arnold/Source/9menu.shar.gz .
+.PP
+The code with full history is also available via Git from
+.BR http://github.com/arnoldrobbins/9menu .
 .SH BUGS
 This program has grown to have too many options.
 .SH AUTHORS
