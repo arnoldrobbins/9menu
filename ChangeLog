@@ -1,3 +1,10 @@
+2016-01-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c: Convert forward declarations to use prototypes.
+	(run_menu): Bug fix. Increment/decrement `i' when keypress
+	moves things up and down so that mouse moves to the right
+	place upon remapping the window.
+
 2015-06-25         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* 9menu.1: Updated.

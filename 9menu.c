@@ -154,11 +154,14 @@ int numitems;
 
 char *shell = "/bin/sh";	/* default shell */
 
-extern void usage(), run_menu(), spawn(), ask_wm_for_delete();
-extern void reap(), set_wm_hints();
-extern void redraw(), teleportmenu(), warpmouse(), restoremouse();
-extern void memory();
-extern int args();
+extern void usage(), run_menu(), spawn(char *com), ask_wm_for_delete();
+extern void reap(int sig), set_wm_hints(int wide, int high);
+extern void redraw(int cur, int high, int wide);
+extern void teleportmenu(int cur, int wide, int high);
+extern void warpmouse(int cur, int wide, int high);
+extern void restoremouse();
+extern void memory(char *msg);
+extern int args(int argc, char **argv);
 
 /* memory --- print the out of memory message and die */
 
@@ -278,11 +281,13 @@ main(int argc, char **argv)
 		} else {
 			fp = fopen(filename, "r");
 		}
+
 		if (fp == NULL) {
 			fprintf(stderr, "%s: couldn't open '%s'\n", progname,
 				filename);
 			exit(1);
 		}
+
 		while (fgets(fbuf, sizeof fbuf, fp)) {
 			char *s = fbuf;
 			strtok(s, "\n");
@@ -368,8 +373,10 @@ main(int argc, char **argv)
 		fprintf(stderr, "\n");
 		exit(1);
 	}
+
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
+
 	/*
 	 * This used to be
 	 * black = BlackPixel(dpy, screen);
@@ -471,10 +478,10 @@ spawn(char *com)
 /* reap --- collect dead children */
 
 void
-reap(int s)
+reap(int sig)
 {
 	(void) wait((int *) NULL);
-	signal(s, reap);
+	signal(sig, reap);
 }
 
 /* usage --- print a usage message and die */
@@ -585,12 +592,15 @@ run_menu()
 			    && key != CONFIG_MENU_SELECT_KEY)
 				break;
 
+			/* adjust i so mapping will work */
 			if (key == CONFIG_MENU_UP_KEY) {
 				old = cur;
 				cur--;
+				i--;
 			} else if (key == CONFIG_MENU_DOWN_KEY) {
 				old = cur;
 				cur++;
+				i++;
 			}
 			
 			while (cur < 0)
