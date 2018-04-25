@@ -75,7 +75,7 @@
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
 
-char version[] = "@(#) 9menu version 1.9";
+char version[] = "9menu version 1.9";
 
 Display *dpy;		/* lovely X stuff */
 int screen;

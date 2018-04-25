@@ -1,3 +1,11 @@
+2018-04-25         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Updates suggested by Eric Lindblad <msvc_test@outlook.com>.
+
+	* 9menu.c (version): Remove the @(#) SCCS marker. Hasn't been
+	necessary for decades, really.
+	* 9menu.1: Update the Examples.
+
 2016-01-07         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* 9menu.c: Convert forward declarations to use prototypes.
