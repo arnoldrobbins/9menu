@@ -58,8 +58,10 @@
  */
 
 #include <stdio.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -75,7 +77,7 @@
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
 
-char version[] = "9menu version 1.9";
+char version[] = "9menu version 1.10";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -142,11 +144,11 @@ char *displayname;	/* X display */
 char *fontname;		/* font */
 char *labelname;	/* window and icon name */
 char *filename;		/* file to read options or labels from */
-int popup;		/* true if we're a popup window */
-int popdown;		/* autohide after running a command */
-int iconic;		/* start iconified */
-int teleport;		/* teleport the menu */
-int warp;		/* warp the mouse */
+bool popup = false;	/* true if we're a popup window */
+bool popdown = false;	/* autohide after running a command */
+bool iconic = false;	/* start iconified */
+bool teleport = false;	/* teleport the menu */
+bool warp = false;	/* warp the mouse */
 
 char **labels;		/* list of labels and commands */
 char **commands;
@@ -168,7 +170,7 @@ extern int args(int argc, char **argv);
 void
 memory(char *s)
 {
-	fprintf(stderr, "%s: couldn't allocate memory for %s\n", progname, s);
+	fprintf(stderr, "%s: couldn't allocate memory for %s: %s\n", progname, s, strerror(errno));
 	exit(1);
 }
 
@@ -179,7 +181,7 @@ args(int argc, char **argv)
 {
 	int i;
 
-	if (argc == 0 || argv == NULL || argv[0] == '\0')
+	if (argc == 0 || argv == NULL || argv[0][0] == '\0')
 		return -1;
 
 	for (i = 0; i < argc && argv[i] != NULL; i++) {
@@ -202,15 +204,15 @@ args(int argc, char **argv)
 			shell = argv[i+1];
 			i++;
 		} else if (strcmp(argv[i], "-popup") == 0)
-			popup++;
+			popup = true;
 		else if (strcmp(argv[i], "-popdown") == 0)
-			popdown++;
+			popdown = true;
 		else if (strcmp(argv[i], "-fg") == 0)
 			fgcname = argv[++i];
 		else if (strcmp(argv[i], "-bg") == 0)
 			bgcname = argv[++i];
 		else if (strcmp(argv[i], "-iconic") == 0)
-			iconic++;
+			iconic = true;
 		else if (strcmp(argv[i], "-path") == 0) {
 			char pathbuf[MAXPATHLEN];
 			char *s, *t;
@@ -224,9 +226,9 @@ args(int argc, char **argv)
 				putenv(t);
 			}
 		} else if (strcmp(argv[i], "-teleport") == 0)
-			teleport++;
+			teleport = true;
 		else if (strcmp(argv[i], "-warp") == 0)
-			warp++;
+			warp = true;
 		else if (strcmp(argv[i], "-version") == 0) {
 			printf("%s\n", version);
 			exit(0);
@@ -283,8 +285,8 @@ main(int argc, char **argv)
 		}
 
 		if (fp == NULL) {
-			fprintf(stderr, "%s: couldn't open '%s'\n", progname,
-				filename);
+			fprintf(stderr, "%s: couldn't open '%s': %s\n", progname,
+				filename, strerror(errno));
 			exit(1);
 		}
 
@@ -460,7 +462,7 @@ spawn(char *com)
 		if (strncmp(com, "exec ", 5) != 0) {
 			pid = fork();
 			if (pid < 0) {
-				fprintf(stderr, "%s: can't fork\n", progname);
+				fprintf(stderr, "%s: can't fork: %s\n", progname, strerror(errno));
 				return;
 			} else if (pid > 0)
 				return;
@@ -491,9 +493,9 @@ usage()
 {
 	fprintf(stderr, "usage: %s [-display displayname] [-font fname] ", progname);
 	fprintf(stderr, "[-file filename] [-path]");
-	fprintf(stderr, "[-geometry geom] [-shell shell]  [-label name] ");
-	fprintf(stderr, "[-popup] [-popdown] [-iconic]  [-teleport] ");
-	fprintf(stderr, "[-warp]  [-version] menitem:command ...\n");
+	fprintf(stderr, "[-geometry geom] [-shell shell] [-label name] ");
+	fprintf(stderr, "[-popup] [-popdown] [-iconic] [-teleport] ");
+	fprintf(stderr, "[-warp] [-version] menitem:command ...\n");
 	exit(0);
 }
 

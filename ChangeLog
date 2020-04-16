@@ -1,3 +1,12 @@
+2020-04-16         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (version): Bump to 1.10 (finally).
+	(usage): Clean up white space in error messages.
+	(args): Fix comparison in first int. Thanks to GCC.
+	General: Change a number of variables from int to bool, and
+	use <stdbool.h>.  Use strerror(errno) in all relevant error messages.
+	* 9menu.1: Increment the version.
+
 2018-04-25         Arnold D. Robbins     <arnold@skeeve.com>
 
 	Updates suggested by Eric Lindblad <msvc_test@outlook.com>.
