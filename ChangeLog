@@ -1,3 +1,7 @@
+2020-07-30         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.1: Some minor cleanups in troff usage and in wording.
+
 2020-04-16         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* 9menu.c (version): Bump to 1.10 (finally).
