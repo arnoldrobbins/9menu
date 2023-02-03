@@ -55,6 +55,11 @@
  * Fix compile warnings (getcwd and getting a key sym).
  * Arnold Robbins
  * January, 2015.
+ *
+ * Let 9menu get the focus so that the arrow keys can be
+ * used. Report and fix from Ullrich Horlacher.
+ * framstag@rus.uni-stuttgart.de
+ * January, 2023.
  */
 
 #include <stdio.h>
@@ -77,7 +82,7 @@
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
 
-char version[] = "9menu version 1.10";
+char version[] = "9menu version 1.11";
 
 Display *dpy;		/* lovely X stuff */
 int screen;
@@ -728,7 +733,7 @@ set_wm_hints(int wide, int high)
 					   nine_menu_height);
 
 	wmhints->icon_pixmap = iconpixmap;
-	wmhints->input = False;		/* no keyboard input */
+	wmhints->input = True;		// grab focus so can use arrow keys
 	if (iconic)
 		wmhints->initial_state = IconicState;
 	else

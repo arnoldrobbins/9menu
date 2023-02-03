@@ -1,4 +1,11 @@
-2021-02-04         Anderson Torres       <torres.anderson.85@protonmail.com>
+2023-02-03         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* 9menu.c (set_wm_hints): Let 9menu get the focus so that the
+	arrow keys can be used. Report and fix from Ullrich Horlacher.
+	<framstag@rus.uni-stuttgart.de>
+	(version): Bump to 1.11.
+
+ 2021-02-04         Anderson Torres       <torres.anderson.85@protonmail.com>
 
 	* meson.build: New file. For people who prefer meson to make /
 	imake / xmkmf.
